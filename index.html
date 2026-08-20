@@ -273,6 +273,36 @@
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzU_HZuOgzXAT7afCYEOmWCtxLO7f4Ss9pDx_nYOB53So5NLyZgtPKea35WKTZCxywHGA/exec";
 
+        async function postToGoogleSheet(payload) {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify(payload),
+                cache: "no-store"
+            });
+
+            const text = await response.text();
+
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                if (text.trim().toLowerCase() === "success") {
+                    return { ok: true, message: "Success" };
+                }
+                throw new Error("Google Apps Script response: " + text);
+            }
+
+            if (result && result.ok === false) {
+                throw new Error(result.error || "Google Sheet request failed");
+            }
+
+            return result;
+        }
+
+
         const DEFAULT_ADMIN = {
             password: "Daman@11",
             role: "admin",
@@ -417,7 +447,9 @@
 
                 const response = await fetch(loginUrl, {
                     method: "GET",
-                    cache: "no-store"
+                    mode: "cors",
+                    cache: "no-store",
+                    credentials: "omit"
                 });
 
                 if (!response.ok) {
