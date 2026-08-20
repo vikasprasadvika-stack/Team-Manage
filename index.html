@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daman Group Attendance System</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-dark); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        
+        .card { background: var(--card-bg); padding: 32px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); border: 1px solid var(--border-color); width: 100%; max-width: 950px; margin-bottom: 20px; }
+        .hidden { display: none !important; }
+
+        /* BRANDING HEADER STYLES */
+        .brand-header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); }
+        .company-title { color: var(--primary); font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+        .company-subtitle { color: #d97706; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+        /* FORM ELEMENTS */
+        .input-group { margin-bottom: 16px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 6px; color: var(--text-dark); font-size: 13px; font-weight: 600; }
+        .input-group input { width: 100%; padding: 11px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; background: #fafafa; }
+        .input-group input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        .form-row { display: flex; gap: 16px; }
+        .form-row .input-group { flex: 1; }
+
+        /* BUTTONS */
+        .btn { padding: 10px 20px; border: none; font-weight: 600; font-size: 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--accent); color: white; width: 100%; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-excel { background: #15803d; color: white; }
+        .btn-excel:hover { background: #166534; }
+        .btn-danger { background: #fee2e2; color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: white; }
+        .btn-danger-solid { background: var(--danger); color: white; }
+        .btn-danger-solid:hover { background: #b91c1c; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #15803d; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-logout { background: #f1f5f9; color: var(--text-muted); float: right; border: 1px solid var(--border-color); }
+        .btn-logout:hover { background: #e2e8f0; color: var(--text-dark); }
+
+        /* CIRCULAR PUNCH BUTTON */
+        .punch-btn-wrapper { display: flex; justify-content: center; margin: 30px 0 20px 0; }
+        .btn-circle { width: 130px; height: 130px; border-radius: 50%; border: none; color: white; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-circle:active { transform: scale(0.95); }
+        .btn-circle-in { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 10px 20px rgba(22, 163, 74, 0.3); }
+        .btn-circle-in:hover { box-shadow: 0 12px 25px rgba(22, 163, 74, 0.4); transform: translateY(-2px); }
+        .btn-circle-out { background: linear-gradient(135deg, #dc2626, #b91c1c); box-shadow: 0 10px 20px rgba(220, 38, 38, 0.3); }
+        .btn-circle-out:hover { box-shadow: 0 12px 25px rgba(220, 38, 38, 0.4); transform: translateY(-2px); }
+        .btn-circle-icon { font-size: 26px; margin-bottom: 2px; }
+
+        /* SYSTEMATIC ADMIN STRUCTURE */
+        .admin-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .admin-title-text h2 { font-size: 20px; color: var(--primary); font-weight: 700; text-align: left; }
+        .admin-title-text p { font-size: 13px; color: var(--text-muted); }
+        
+        .admin-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .metric-card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; text-align: left; }
+        .metric-card span { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-card h3 { font-size: 22px; color: var(--primary); margin-top: 4px; text-align: left; }
+        
+        .metric-card.in-card { border-left: 4px solid var(--success); }
+        .metric-card.out-card { border-left: 4px solid var(--danger); }
+        .metric-card.total-card { border-left: 4px solid var(--accent); }
+
+        .admin-nav-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .tab-btn { padding: 10px 18px; background: none; border: none; border-bottom: 2px solid transparent; font-weight: 600; font-size: 14px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .panel-block { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; }
+        .panel-block-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+
+        /* TABLES */
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { border-bottom: 1px solid var(--border-color); padding: 12px 14px; font-size: 13px; }
+        th { background-color: #f8fafc; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        tr:last-child td { border-bottom: none; }
+        .location-link { color: var(--accent); text-decoration: none; font-weight: 600; display: inline-block; margin-top: 2px; }
+        .address-text { font-size: 12px; color: var(--text-dark); }
+        .punch-type-in { color: var(--success); font-weight: 700; }
+        .punch-type-out { color: var(--danger); font-weight: 700; }
+        .status-msg { margin-top: 15px; font-weight: 600; text-align: center; font-size: 13px; min-height: 38px; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN CARD -->
+    <div id="loginCard" class="card" style="max-width: 400px;">
+        <div class="brand-header">
+            <h1 class="company-title">Daman Group</h1>
+            <p class="company-subtitle">Daman Mandeep Roadline Pvt. Ltd.</p>
+        </div>
+
+        <h2 style="font-size: 18px; margin-bottom: 20px;">System Login</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Username / ID</label>
+                <input type="text" id="username" placeholder="Enter Username" required>
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter Password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+    </div>
+
+    <!-- STAFF DASHBOARD -->
+    <div id="staffDashboard" class="card hidden">
+        <button onclick="logout()" class="btn btn-logout">Logout</button>
+        
+        <div class="brand-header">
+            <h1 class="company-title">Daman Group</h1>
+            <p class="company-subtitle">Daman Mandeep Roadline Pvt. Ltd.</p>
+        </div>
+
+        <h2 style="font-size: 18px;">Staff Attendance Portal</h2>
+        <p style="text-align: center; margin-top: 4px; font-size: 14px; color: var(--text-muted);">Welcome back, <span id="staffNameDisplay" style="font-weight:700; color:var(--primary);"></span></p>
+
+        <div class="punch-btn-wrapper">
+            <button id="punchBtn" onclick="handlePunchToggle()" class="btn-circle btn-circle-in">
+                <span id="btnIcon" class="btn-circle-icon">📍</span>
+                <span id="btnText">Punch IN</span>
+            </button>
+        </div>
+        <div id="statusMessage" class="status-msg"></div>
+
+        <div style="margin-top: 24px;">
+            <h3 style="font-size: 14px; text-align: left; margin-bottom: 10px; color: var(--text-muted);">Aapki Recent Punch Logs</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody id="staffLogTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN CONTROL PANEL -->
+    <div id="adminDashboard" class="card hidden">
+        <div class="brand-header">
+            <h1 class="company-title">Daman Group</h1>
+            <p class="company-subtitle">Daman Mandeep Roadline Pvt. Ltd.</p>
+        </div>
+
+        <div class="admin-header-bar">
+            <div class="admin-title-text">
+                <h2>Admin Control Panel</h2>
+                <p>Manage employees and attendance records</p>
+            </div>
+            <button onclick="logout()" class="btn btn-logout">Logout</button>
+        </div>
+
+        <!-- DAILY DYNAMIC METRICS -->
+        <div class="admin-metrics">
+            <div class="metric-card in-card">
+                <span>Punch IN Members</span>
+                <h3 id="metricPunchInCount" style="color: var(--success);">0</h3>
+            </div>
+            <div class="metric-card out-card">
+                <span>Punch OUT Members</span>
+                <h3 id="metricPunchOutCount" style="color: var(--danger);">0</h3>
+            </div>
+            <div class="metric-card total-card">
+                <span>Total Punch Logs</span>
+                <h3 id="metricLogsCount">0</h3>
+            </div>
+        </div>
+
+        <!-- TABS NAV -->
+        <div class="admin-nav-tabs">
+            <button id="tabLogsBtn" onclick="switchAdminTab('logs')" class="tab-btn active">📊 Attendance Logs</button>
+            <button id="tabDashboardBtn" onclick="switchAdminTab('dashboard')" class="tab-btn">👥 Staff Management</button>
+        </div>
+
+        <!-- TAB 1: ATTENDANCE LOGS -->
+        <div id="tabLogsSection">
+            <div class="panel-block">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div class="panel-block-title" style="margin-bottom: 0; border: none; padding: 0;">Attendance Logs History</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="fetchAdminLogsFromGoogleSheet()" class="btn btn-primary btn-sm">🔄 Refresh Data</button>
+                        <button onclick="exportToCSV()" class="btn btn-excel btn-sm">📥 Export CSV</button>
+                        <button onclick="clearAttendanceHistory()" class="btn btn-danger-solid btn-sm">🗑️ Clear History</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Staff Name</th>
+                                <th>Action</th>
+                                <th>Address & Location</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: STAFF MANAGEMENT -->
+        <div id="tabDashboardSection" class="hidden">
+            <div style="display: grid; gap: 20px;">
+                <!-- ADD STAFF FORM -->
+                <div class="panel-block">
+                    <div class="panel-block-title">➕ Register New Staff</div>
+                    <form id="addStaffForm">
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label>Full Name</label>
+                                <input type="text" id="newStaffName" placeholder="e.g. Rahul Kumar" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Username / ID</label>
+                                <input type="text" id="newStaffUser" placeholder="e.g. rahul123" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Password</label>
+                                <input type="password" id="newStaffPass" placeholder="******" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success" style="float: right;">+ Add Staff Member</button>
+                        <div style="clear: both;"></div>
+                    </form>
+                </div>
+
+                <!-- STAFF LIST -->
+                <div class="panel-block">
+                    <div class="panel-block-title">👥 Registered Staff Directory</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Username</th>
+                                    <th>Password</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffListTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwMBRUUkjkQfS1EAf07YBCmiQ9Le5GOHese52vsUKpeBpDF6tZfGXQtb3TKjyXyZn9x/exec";
+
+        const DEFAULT_ADMIN = {
+            password: "Daman@11",
+            role: "admin",
+            name: "System Admin"
+        };
+
+        let users = {
+            "Admin": DEFAULT_ADMIN
+        };
+
+        let currentUser = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;',"\"":'&quot;'}[c]));
+        }
+
+        // Staff accounts and attendance are shared through Google Apps Script.
+        // LocalStorage is only a temporary offline cache.
+        async function apiPost(payload) {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await response.text();
+            let result;
+            try { result = JSON.parse(text); }
+            catch (e) { throw new Error("Google Apps Script ne JSON response nahi diya: " + text.slice(0, 200)); }
+
+            if (result && result.ok === false) {
+                throw new Error(result.error || "Google Apps Script request failed");
+            }
+            return result;
+        }
+
+        async function loadUsersFromCloud() {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL + "?action=users&ts=" + Date.now(), {
+                    method: "GET",
+                    cache: "no-store"
+                });
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const cloudUsers = await response.json();
+
+                const freshUsers = { "Admin": DEFAULT_ADMIN };
+                if (Array.isArray(cloudUsers)) {
+                    cloudUsers.forEach(u => {
+                        if (u && (u.username || u.userId)) {
+                            const username = String(u.username || u.userId).trim();
+                            freshUsers[username] = {
+                                password: String(u.password ?? ""),
+                                role: String(u.role || "staff").toLowerCase(),
+                                name: String(u.name || username)
+                            };
+                        }
+                    });
+                }
+                users = freshUsers;
+                saveUsers();
+                return true;
+            } catch (err) {
+                console.error("loadUsersFromCloud:", err);
+                const cached = JSON.parse(localStorage.getItem('systemUsers') || '{}');
+                users = { "Admin": DEFAULT_ADMIN, ...cached };
+                return false;
+            }
+        }
+
+        function saveUsers() {
+            localStorage.setItem('systemUsers', JSON.stringify(users));
+        }
+
+        function findUser(username) {
+            if (users[username]) return users[username];
+            const key = Object.keys(users).find(k => k.toLowerCase() === username.toLowerCase());
+            return key ? users[key] : null;
+        }
+
+        function switchAdminTab(tabName) {
+            const logsSec = document.getElementById('tabLogsSection');
+            const dashSec = document.getElementById('tabDashboardSection');
+            const logsBtn = document.getElementById('tabLogsBtn');
+            const dashBtn = document.getElementById('tabDashboardBtn');
+
+            if (tabName === 'dashboard') {
+                dashSec.classList.remove('hidden'); logsSec.classList.add('hidden');
+                dashBtn.classList.add('active'); logsBtn.classList.remove('active');
+                renderStaffDirectory();
+            } else {
+                logsSec.classList.remove('hidden'); dashSec.classList.add('hidden');
+                logsBtn.classList.add('active'); dashBtn.classList.remove('active');
+                fetchAdminLogsFromGoogleSheet();
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const oldText = submitBtn.innerText;
+            submitBtn.disabled = true; submitBtn.innerText = "Checking...";
+
+            await loadUsersFromCloud();
+            const matchedKey = Object.keys(users).find(k => k.toLowerCase() === usernameInput.toLowerCase());
+            const user = matchedKey ? users[matchedKey] : null;
+
+            if (user && String(user.password) === passwordInput) {
+                currentUser = { id: matchedKey, ...user };
+                document.getElementById('loginCard').classList.add('hidden');
+
+                if (user.role === 'staff') {
+                    document.getElementById('staffNameDisplay').innerText = user.name;
+                    document.getElementById('staffDashboard').classList.remove('hidden');
+                    await loadAttendanceFromCloud();
+                    updatePunchButtonUI();
+                    renderStaffPersonalLogs();
+                } else if (user.role === 'admin') {
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    renderAdminPanel();
+                    switchAdminTab('logs');
+                }
+            } else {
+                alert("Galat Username ya Password!");
+            }
+            submitBtn.disabled = false; submitBtn.innerText = oldText;
+        });
+
+        document.getElementById('addStaffForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('newStaffName').value.trim();
+            const username = document.getElementById('newStaffUser').value.trim();
+            const password = document.getElementById('newStaffPass').value.trim();
+            if (!name || !username || !password) { alert("Staff Name, Username aur Password zaroori hai."); return; }
+
+            await loadUsersFromCloud();
+            if (findUser(username)) { alert("Yeh Username pehle se maujood hai!"); return; }
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const oldText = submitBtn.innerText;
+            submitBtn.disabled = true; submitBtn.innerText = "Saving...";
+            try {
+                await apiPost({ action: "addUser", username, password, role: "staff", name });
+                // Re-fetch from Google Sheet so the directory and login use the real cloud data.
+                const loaded = await loadUsersFromCloud();
+                if (!loaded || !findUser(username)) throw new Error("Staff add response aaya, lekin users list me staff nahi mila.");
+                this.reset();
+                renderStaffDirectory();
+                alert(`Naya staff '${name}' successfully add ho gaya!`);
+            } catch (err) {
+                console.error(err);
+                alert("Staff add nahi hua: " + err.message);
+            } finally {
+                submitBtn.disabled = false; submitBtn.innerText = oldText;
+            }
+        });
+
+        async function deleteStaff(username) {
+            const staff = findUser(username);
+            if (!staff) return;
+            if (!confirm(`Kya aap '${staff.name}' ko delete karna chahte hain?`)) return;
+
+            try {
+                await apiPost({ action: "deleteUser", username });
+                await loadUsersFromCloud();
+                if (findUser(username)) throw new Error("Google Sheet se staff abhi bhi return ho raha hai.");
+                renderStaffDirectory();
+                alert("Staff delete ho gaya.");
+            } catch (err) {
+                console.error(err);
+                alert("Staff delete nahi hua: " + err.message);
+            }
+        }
+
+        async function clearAttendanceHistory() {
+            if (!confirm("Kya aap sach me saari Punch History delete karna chahte hain? Yeh action undo nahi ho sakta.")) return;
+            try {
+                await apiPost({ action: "clearAttendance" });
+                localStorage.removeItem('attendanceLogs');
+                renderAdminLogsTable([]);
+                alert("Saari attendance history delete kar di gayi hai!");
+            } catch (err) {
+                console.error(err);
+                alert("History delete nahi hui: " + err.message);
+            }
+        }
+
+        async function loadAttendanceFromCloud() {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL + "?ts=" + Date.now(), { cache: "no-store" });
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const records = await response.json();
+                if (Array.isArray(records)) localStorage.setItem('attendanceLogs', JSON.stringify(records));
+                return Array.isArray(records) ? records : [];
+            } catch (err) {
+                console.error("loadAttendanceFromCloud:", err);
+                return JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+            }
+        }
+
+        function renderStaffDirectory() {
+            const tbody = document.getElementById('staffListTableBody');
+            tbody.innerHTML = '';
+            let count = 0;
+            Object.keys(users).forEach(u => {
+                if (users[u].role === 'staff') {
+                    count++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><strong>${escapeHtml(users[u].name)}</strong></td>
+                        <td><code>${escapeHtml(u)}</code></td>
+                        <td><code>${escapeHtml(users[u].password)}</code></td>
+                        <td><button onclick="deleteStaff(${JSON.stringify(u)})" class="btn btn-danger btn-sm">Delete</button></td>`;
+                    tbody.appendChild(tr);
+                }
+            });
+            if (!count) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Koi staff registered nahi hai.</td></tr>`;
+        }
+
+        // FETCH LIVE DATA FROM GOOGLE SHEET FOR ADMIN PANEL
+        async function fetchAdminLogsFromGoogleSheet() {
+            const attTbody = document.getElementById('attendanceTableBody');
+            attTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Fetching Live Data from Google Sheet...</td></tr>';
+            try {
+                const records = await loadAttendanceFromCloud();
+                renderAdminLogsTable(Array.isArray(records) ? records : []);
+            } catch (err) {
+                console.error(err);
+                const localRecords = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+                renderAdminLogsTable(localRecords);
+            }
+        }
+
+        function renderAdminLogsTable(records) {
+            const attTbody = document.getElementById('attendanceTableBody');
+            attTbody.innerHTML = '';
+
+            updateMetrics(records);
+
+            if (!records || records.length === 0) {
+                attTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Koi attendance records available nahi hain.</td></tr>`;
+                return;
+            }
+
+            records.slice().reverse().forEach(rec => {
+                const typeText = String(rec.type || '').toUpperCase();
+                const isIN = typeText.includes('IN');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${rec.date || ''}</td>
+                    <td>${rec.time || ''}</td>
+                    <td><strong>${rec.name || ''}</strong></td>
+                    <td class="${isIN ? 'punch-type-in' : 'punch-type-out'}">PUNCH ${isIN ? 'IN' : 'OUT'}</td>
+                    <td>
+                        <span class="address-text">📍 ${rec.address || ''}</span>
+                        ${rec.locationUrl ? `<a class="location-link" href="${rec.locationUrl}" target="_blank">View Map</a>` : ''}
+                    </td>
+                `;
+                attTbody.appendChild(tr);
+            });
+        }
+
+        // FIXED METRICS FUNCTION TO CORRECTLY COUNT IN & OUT LOGS
+        function updateMetrics(recordsData) {
+            const records = recordsData || JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+
+            let latestStatusPerUser = {};
+            records.forEach(r => {
+                const userKey = r.userId || r.name;
+                const typeText = String(r.type || '').toUpperCase();
+                if (typeText.includes('IN')) {
+                    latestStatusPerUser[userKey] = 'IN';
+                } else if (typeText.includes('OUT')) {
+                    latestStatusPerUser[userKey] = 'OUT';
+                }
+            });
+
+            let punchInTodayCount = 0;
+            let punchOutTodayCount = 0;
+
+            Object.values(latestStatusPerUser).forEach(type => {
+                if (type === 'IN') punchInTodayCount++;
+                if (type === 'OUT') punchOutTodayCount++;
+            });
+
+            const inElem = document.getElementById('metricPunchInCount');
+            const outElem = document.getElementById('metricPunchOutCount');
+            const logsElem = document.getElementById('metricLogsCount');
+
+            if (inElem) inElem.innerText = punchInTodayCount;
+            if (outElem) outElem.innerText = punchOutTodayCount;
+            if (logsElem) logsElem.innerText = records.length;
+        }
+
+        function getLastPunchState() {
+            let records = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+            let userLogs = records.filter(r => r.userId === currentUser.id);
+            if (userLogs.length === 0) return null;
+            return userLogs[userLogs.length - 1];
+        }
+
+        function updatePunchButtonUI() {
+            const btn = document.getElementById('punchBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const lastLog = getLastPunchState();
+
+            if (!lastLog || String(lastLog.type).toUpperCase().includes('OUT')) {
+                btnText.innerText = "Punch IN";
+                btnIcon.innerText = "📍";
+                btn.className = "btn-circle btn-circle-in";
+            } else {
+                btnText.innerText = "Punch OUT";
+                btnIcon.innerText = "🚪";
+                btn.className = "btn-circle btn-circle-out";
+            }
+            btn.disabled = false;
+        }
+
+        function handlePunchToggle() {
+            const lastLog = getLastPunchState();
+            if (!lastLog || String(lastLog.type).toUpperCase().includes('OUT')) {
+                markAttendance('IN');
+            } else {
+                markAttendance('OUT');
+            }
+        }
+
+        async function fetchExactAddress(lat, lon) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+
+                if (data && data.address) {
+                    const addr = data.address;
+                    const city = addr.city || addr.town || addr.village || addr.county || addr.state_district || "";
+                    const suburb = addr.suburb || addr.neighbourhood || addr.residential || "";
+                    const road = addr.road || "";
+                    const state = addr.state || "";
+
+                    let formattedLocation = "";
+                    if (suburb || road) formattedLocation += `${suburb} ${road}`.trim() + ", ";
+                    if (city) formattedLocation += `${city}, `;
+                    if (state) formattedLocation += `${state}`;
+
+                    return formattedLocation || data.display_name;
+                }
+                return `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+            } catch (error) {
+                return `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+            }
+        }
+
+        function markAttendance(type) {
+            const statusDiv = document.getElementById('statusMessage');
+            const btn = document.getElementById('punchBtn');
+            
+            btn.disabled = true;
+            statusDiv.innerText = "Detecting location & syncing with cloud...";
+            statusDiv.style.color = "var(--accent)";
+
+            if (!navigator.geolocation) {
+                statusDiv.innerText = "Geolocation support is not available on this device.";
+                statusDiv.style.color = "var(--danger)";
+                btn.disabled = false;
+                return;
+            }
+
+            const geoOptions = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
+
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                const fullAddress = await fetchExactAddress(lat, lon);
+                const locationUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+
+                const now = new Date();
+                const currentDate = now.toLocaleDateString();
+                const currentTime = now.toLocaleTimeString();
+
+                const logPayload = {
+                    userId: currentUser.id,
+                    name: currentUser.name,
+                    date: currentDate,
+                    time: currentTime,
+                    type: type,
+                    address: fullAddress,
+                    locationUrl: locationUrl
+                };
+
+                let records = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+                records.push(logPayload);
+                localStorage.setItem('attendanceLogs', JSON.stringify(records));
+
+                // LIVE SYNC TO GOOGLE SHEETS
+                try {
+                    await apiPost(logPayload);
+                } catch (err) {
+                    console.error("Cloud Sync Failed", err);
+                    // Do not claim success if the cloud write failed.
+                    records = records.filter(r => !(r === logPayload));
+                    localStorage.setItem('attendanceLogs', JSON.stringify(records));
+                    statusDiv.innerText = "Google Sheet sync failed: " + err.message;
+                    statusDiv.style.color = "var(--danger)";
+                    btn.disabled = false;
+                    return;
+                }
+
+                statusDiv.innerHTML = `${type === 'IN' ? 'Punch IN' : 'Punch OUT'} Successful (${currentTime})<br><span style="font-size:12px; color:var(--text-muted);">📍 ${fullAddress}</span>`;
+                statusDiv.style.color = "var(--success)";
+
+                updatePunchButtonUI();
+                renderStaffPersonalLogs();
+
+            }, (error) => {
+                statusDiv.innerText = "Location Error: Please turn on mobile GPS.";
+                statusDiv.style.color = "var(--danger)";
+                btn.disabled = false;
+            }, geoOptions);
+        }
+
+        function renderStaffPersonalLogs() {
+            const tbody = document.getElementById('staffLogTableBody');
+            tbody.innerHTML = '';
+            const records = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+            
+            const userLogs = records.filter(r => r.userId === currentUser.id).reverse();
+
+            if (userLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Koi punch record nahi hai.</td></tr>`;
+                return;
+            }
+
+            userLogs.slice(0, 5).forEach(rec => {
+                const isIN = String(rec.type).toUpperCase().includes('IN');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${rec.date} ${rec.time}</td>
+                    <td class="${isIN ? 'punch-type-in' : 'punch-type-out'}">${isIN ? 'IN' : 'OUT'}</td>
+                    <td><span class="address-text">📍 ${rec.address}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function renderAdminPanel() {
+            renderStaffDirectory();
+            await fetchAdminLogsFromGoogleSheet();
+        }
+
+        function exportToCSV() {
+            const records = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
+
+            if (records.length === 0) {
+                alert("Download karne ke liye koi data nahi hai!");
+                return;
+            }
+
+            let csvContent = "Date,Time,Staff Name,Action Type,Address,Google Map Link\n";
+
+            records.forEach(rec => {
+                const date = `"${rec.date || ''}"`;
+                const time = `"${rec.time || ''}"`;
+                const name = `"${rec.name || ''}"`;
+                const type = `"${rec.type || ''}"`;
+                const addr = `"${rec.address || ''}"`;
+                const mapLink = `"${rec.locationUrl || ''}"`;
+
+                csvContent += `${date},${time},${name},${type},${addr},${mapLink}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            const today = new Date().toISOString().slice(0, 10);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Daman_Group_Logs_${today}.csv`);
+            document.body.appendChild(link);
+            
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('statusMessage').innerText = '';
+            document.getElementById('staffDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('loginCard').classList.remove('hidden');
+        }
+
+        (async () => {
+            await loadUsersFromCloud();
+        })();
+    </script>
+</body>
+</html>
