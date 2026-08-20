@@ -502,8 +502,7 @@
                 renderAdminLogsTable(Array.isArray(records) ? records : []);
             } catch (err) {
                 console.error(err);
-                const localRecords = JSON.parse(localStorage.getItem('attendanceLogs')) || [];
-                renderAdminLogsTable(localRecords);
+                renderAdminLogsTable([]);
             }
         }
 
