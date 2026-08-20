@@ -317,21 +317,28 @@
                     cache: "no-store"
                 });
                 if (!response.ok) throw new Error("HTTP " + response.status);
-                const cloudUsers = await response.json();
+                const cloudResponse = await response.json();
+
+                if (cloudResponse && cloudResponse.ok === false) {
+                    throw new Error(cloudResponse.error || "Staff data fetch failed");
+                }
+
+                const cloudUsers = Array.isArray(cloudResponse)
+                    ? cloudResponse
+                    : (Array.isArray(cloudResponse?.users) ? cloudResponse.users : []);
 
                 const freshUsers = { "Admin": DEFAULT_ADMIN };
-                if (Array.isArray(cloudUsers)) {
-                    cloudUsers.forEach(u => {
-                        if (u && (u.username || u.userId)) {
-                            const username = String(u.username || u.userId).trim();
-                            freshUsers[username] = {
-                                password: String(u.password ?? ""),
-                                role: String(u.role || "staff").toLowerCase(),
-                                name: String(u.name || username)
-                            };
-                        }
-                    });
-                }
+
+                cloudUsers.forEach(u => {
+                    if (u && (u.username || u.userId)) {
+                        const username = String(u.username || u.userId).trim();
+                        freshUsers[username] = {
+                            password: String(u.password ?? ""),
+                            role: String(u.role || "staff").toLowerCase(),
+                            name: String(u.name || username)
+                        };
+                    }
+                });
                 users = freshUsers;
                 saveUsers();
                 return true;
@@ -372,35 +379,106 @@
 
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
             const usernameInput = document.getElementById('username').value.trim();
             const passwordInput = document.getElementById('password').value.trim();
+
             const submitBtn = this.querySelector('button[type="submit"]');
             const oldText = submitBtn.innerText;
-            submitBtn.disabled = true; submitBtn.innerText = "Checking...";
 
-            await loadUsersFromCloud();
-            const matchedKey = Object.keys(users).find(k => k.toLowerCase() === usernameInput.toLowerCase());
-            const user = matchedKey ? users[matchedKey] : null;
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Checking...";
 
-            if (user && String(user.password) === passwordInput) {
-                currentUser = { id: matchedKey, ...user };
+            try {
+                // Admin login remains local.
+                if (
+                    usernameInput.toLowerCase() === "admin" &&
+                    passwordInput === DEFAULT_ADMIN.password
+                ) {
+                    currentUser = { id: "Admin", ...DEFAULT_ADMIN };
+
+                    document.getElementById('loginCard').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+
+                    renderAdminPanel();
+                    switchAdminTab('logs');
+
+                    return;
+                }
+
+                // STAFF LOGIN: Google Sheet is the single source of truth.
+                // This works across different phones/browsers.
+                const loginUrl =
+                    GOOGLE_SCRIPT_URL +
+                    "?action=login" +
+                    "&username=" + encodeURIComponent(usernameInput) +
+                    "&password=" + encodeURIComponent(passwordInput) +
+                    "&ts=" + Date.now();
+
+                const response = await fetch(loginUrl, {
+                    method: "GET",
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error("Login server HTTP " + response.status);
+                }
+
+                const result = await response.json();
+
+                if (!result.ok || !result.user) {
+                    alert(result.error || "Galat Username ya Password!");
+                    return;
+                }
+
+                const user = result.user;
+
+                if (!user.username) {
+                    throw new Error("Google Sheet se valid staff username nahi mila.");
+                }
+
+                currentUser = {
+                    id: String(user.username).trim(),
+                    name: String(user.name || user.username).trim(),
+                    password: String(user.password ?? ""),
+                    role: String(user.role || "staff").trim().toLowerCase()
+                };
+
+                // Keep local cache only for display/offline use.
+                users[user.username] = {
+                    password: user.password,
+                    role: user.role,
+                    name: user.name
+                };
+                saveUsers();
+
                 document.getElementById('loginCard').classList.add('hidden');
 
-                if (user.role === 'staff') {
+                if (String(user.role).toLowerCase() === 'staff') {
                     document.getElementById('staffNameDisplay').innerText = user.name;
                     document.getElementById('staffDashboard').classList.remove('hidden');
+
                     await loadAttendanceFromCloud();
                     updatePunchButtonUI();
                     renderStaffPersonalLogs();
-                } else if (user.role === 'admin') {
+
+                } else if (String(user.role).toLowerCase() === 'admin') {
                     document.getElementById('adminDashboard').classList.remove('hidden');
+
                     renderAdminPanel();
                     switchAdminTab('logs');
                 }
-            } else {
-                alert("Galat Username ya Password!");
+
+            } catch (err) {
+                console.error("Cloud login error:", err);
+                alert(
+                    "Google Sheet se login verify nahi ho pa raha. " +
+                    "Apps Script deployment ko latest version par update karein."
+                );
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = oldText;
             }
-            submitBtn.disabled = false; submitBtn.innerText = oldText;
         });
 
         document.getElementById('addStaffForm').addEventListener('submit', async function(e) {
